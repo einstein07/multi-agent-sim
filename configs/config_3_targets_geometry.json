@@ -1,0 +1,28 @@
+{
+    "log_directory": "./experiment_logs",
+  "experiment_name": "2_targets",
+    "num_agents": 20,
+    "x_width": 60,
+    "y_height": 60,
+    "center": [0, 0],
+    "time_steps": 2000000,
+    "light_sources": [
+    {"id": 1, "x": 3.83, "y": -3.21, "color": "green"},
+    {"id": 2, "x": 5, "y": 0, "color": "blue"},
+    {"id": 3, "x": 3.83, "y": 3.21, "color": "yellow"}
+],
+    "init_robot_bounds": {"x_min": 0, "x_max": 0, "y_min": -1, "y_max": 2},
+    "robots_speed": 0.1,
+    "track_width": 0.14,
+    "eta": 0.1,
+    "fov": 60,
+    "robots_direction": 0,
+    "no_turn_threshold": 5,
+    "soft_turn_threshold": 25,
+    "hard_turn_threshold": 50,
+    "steps_per_second": 10,
+    "termination_radius": 1,
+    "commitment_update_time": 5,
+    "num_runs": 50,
+    "visualize": false
+}
