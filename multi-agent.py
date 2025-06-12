@@ -144,8 +144,9 @@ class Agent:
         """
         abs_angle = abs(c_heading_angle)
         # Clamp the speed so that it's not greater than MaxSpeed
-        #print('target distance: ', c_heading_magnitude/100)
-        fBaseAngularWheelSpeed = params.BaseSpeed# min(c_heading_magnitude/100, params.BaseSpeed)
+        # Spoke with Giovanni about this, and he said that the speed is better kept constant
+        #fBaseAngularWheelSpeed = min(c_heading_magnitude/100, params.BaseSpeed)
+        fBaseAngularWheelSpeed = params.BaseSpeed
         #print('TM, ANGLE, PARAMS: ', turning_mechanism, c_heading_angle, params)
         if turning_mechanism == NO_TURN:
             # Both wheels run at the same base speed => go straight
@@ -284,7 +285,7 @@ class Agent:
             completeInputs = list(self.received_broadcasts.values())
             completeInputs.extend(visible_targets_ids)  # Changed from append to extend
             #if visible_targets_ids:
-            print("ID: ", self.id, " Received broadcasts: ", self.received_broadcasts, " Visible targets: ", visible_targets_ids)
+            #print("ID: ", self.id, " Received broadcasts: ", self.received_broadcasts, " Visible targets: ", visible_targets_ids)
             if len(completeInputs) > 0:
                 newCommitment = random.choice(completeInputs)
             else:
@@ -571,33 +572,60 @@ class Simulation:
         return run_folder
 
     def initialize_agents(self, run_folder):
-        """Initialize agents with random positions and commitments."""
+        """Initialize agents in a dense grid centered at the origin."""
         self.agents = []
         commitments = random.choices(self.light_ids, k=self.num_agents)
 
-        for i in range(self.num_agents):
-            x = random.uniform(self.config['init_robot_bounds']['x_min'],
-                               self.config['init_robot_bounds']['x_max'])
-            y = random.uniform(self.config['init_robot_bounds']['y_min'],
-                               self.config['init_robot_bounds']['y_max'])
+        # Calculate grid dimensions
+        spacing = 2 * self.robot_radius  # Minimum distance to avoid overlap
+        num_agents = self.num_agents
+        # Estimate grid size: try to make it as square as possible
+        cols = int(math.ceil(math.sqrt(num_agents)))
+        rows = int(math.ceil(num_agents / cols))
+        
+        # Calculate grid width and height
+        grid_width = (cols - 1) * spacing
+        grid_height = (rows - 1) * spacing
+        
+        # Center the grid at (0, 0)
+        center_x, center_y = 0, 0
+        x_start = center_x - grid_width / 2
+        y_start = center_y - grid_height / 2
 
-            agent = Agent(
-                id=i, x=x, y=y,
-                speed=self.robots_speed,
-                track_width=self.track_width,
-                direction=math.radians(self.config['robots_direction']),
-                commitment=commitments[i],
-                eta=self.eta,
-                light_ids=self.light_ids,
-                fov=self.fov,
-                update_offset= random.randint(1, self.config["commitment_update_time"]),
-                thresholds = self.thresholds,
-                turning_mechanism = NO_TURN,
-                radius=self.robot_radius,
-                all_agents=self.agents  # Pass current list, will be updated
-            )
-            agent.initialize_log_file(self.start_time, run_folder, self.experiment_name)
-            self.agents.append(agent)
+        # Ensure the grid fits within arena bounds
+        if (x_start < self.arena_bounds['x_min'] or 
+            x_start + grid_width > self.arena_bounds['x_max'] or
+            y_start < self.arena_bounds['y_min'] or
+            y_start + grid_height > self.arena_bounds['y_max']):
+            raise ValueError("Grid dimensions exceed arena bounds. Reduce num_agents or robot_radius.")
+
+        agent_idx = 0
+        for row in range(rows):
+            for col in range(cols):
+                if agent_idx >= num_agents:
+                    break
+                x = x_start + col * spacing
+                y = y_start + row * spacing
+                agent = Agent(
+                    id=agent_idx,
+                    x=x,
+                    y=y,
+                    speed=self.robots_speed,
+                    track_width=self.track_width,
+                    direction=math.radians(self.config['robots_direction']),
+                    commitment=commitments[agent_idx],
+                    eta=self.eta,
+                    light_ids=self.light_ids,
+                    fov=self.fov,
+                    update_offset=random.randint(1, self.config["commitment_update_time"]),
+                    thresholds=self.thresholds,
+                    turning_mechanism=NO_TURN,
+                    radius=self.robot_radius,
+                    all_agents=self.agents
+                )
+                agent.initialize_log_file(self.start_time, run_folder, self.experiment_name)
+                self.agents.append(agent)
+                agent_idx += 1
 
         # Update all_agents reference for all agents after creation
         for agent in self.agents:
@@ -777,14 +805,16 @@ class Simulation:
    
     def check_termination(self):
         """Check if all agents are within termination radius of their committed targets."""
+        terminate = True
         for agent in self.agents:
             light = self.light_sources[agent.commitment]
             distance = math.hypot(agent.x - light.x, agent.y - light.y)
             if distance <= self.config['termination_radius']:
                 agent.is_within_termination_radius = True
-            if not agent.is_within_termination_radius:
-                return False
-        return True
+                #print(f"Agent {agent.id} reached target {agent.commitment} at ({light.x}, {light.y})")
+            else:
+                terminate = False
+        return terminate
 
     def enforce_timing(self, step_start):
         """Maintain consistent timestep duration."""
