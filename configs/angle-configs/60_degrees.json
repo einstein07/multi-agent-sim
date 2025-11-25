@@ -1,7 +1,7 @@
 {
-    "log_directory": "./experiment_logs_quality_variation_57.5_to_42.5_eta_10_comms_1.0",
-    "experiment_name": "2_targets",
-    "num_agents": 20,
+    "log_directory": "./60_degrees",
+  "experiment_name": "2_targets",
+    "num_agents": 100,
     "x_width": 60,
     "y_height": 60,
     "center": [0, 0],
@@ -13,10 +13,10 @@
     "init_robot_bounds": {"x_min": 0, "x_max": 0, "y_min": -0.5, "y_max": 0.5},
     "robots_speed": 0.1,
     "track_width": 0.14,
-    "eta": 0.1,
+    "eta": 0.3,
     "fov": 360,
-    "robot_radius": 0.01,
-    "communication_range": 1.0,
+    "robot_radius": 0.08,
+    "communication_range": -1,
     "robots_direction": 0,
     "no_turn_threshold": 5,
     "soft_turn_threshold": 10,
@@ -26,6 +26,5 @@
     "commitment_update_time": 5,
     "num_runs": 50,
     "occlusion": false,
-    "visualize": false,
-    "debug": false
+    "visualize": false
 }
