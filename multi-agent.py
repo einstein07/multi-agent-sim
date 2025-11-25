@@ -51,6 +51,7 @@ class Agent:
         self.broadcast = None
         self.my_opinions = []
         self.number_of_neighbors = []
+        self.ids_of_neighbors = []
         self.visible_agents = []
         self.visible_targets = []
         self.log_file = None
@@ -71,7 +72,7 @@ class Agent:
         filename = os.path.join(run_folder, f"{experiment_name}_bot{self.id}_{simulation_start_time}.csv")
         self.log_file = open(filename, "w", newline="")
         writer = csv.writer(self.log_file)
-        writer.writerow(["Time", "Commitment", "Opinion", "Neighbors", "LightSources", "VisibleAgents"])
+        writer.writerow(["Time", "Commitment", "Opinion", "Neighbors", "LightSources", "VisibleAgents", "IDsOfNeighbors"])
         self.csv_writer = writer
 
     def close_log_file(self):
@@ -330,12 +331,14 @@ class Agent:
         """Log the agent's current state."""
         opinions = ";".join(map(str, self.my_opinions))
         neighbors = ";".join(map(str, self.number_of_neighbors))
+        ids_of_neighbors = ";".join(map(str, self.ids_of_neighbors))
         visible_targets = ";".join(map(str, self.visible_targets))
         visible_agents = ";".join(map(str, self.visible_agents))
         # Log the data to the CSV file
-        self.csv_writer.writerow([time_step, self.commitment, opinions, neighbors, visible_targets, visible_agents])
+        self.csv_writer.writerow([time_step, self.commitment, opinions, neighbors, visible_targets, visible_agents, ids_of_neighbors])
         self.my_opinions.clear()
         self.number_of_neighbors.clear()
+        self.ids_of_neighbors.clear()
         self.visible_targets.clear()
         self.visible_agents.clear()
 
@@ -944,6 +947,13 @@ class Simulation:
             in_range = (distances[i] <= self.communication_range) & (np.arange(n_agents) != i)
             num_neighbors = np.sum(in_range)
             sender.number_of_neighbors.append(num_neighbors)
+            
+            neighbor_indices = np.where(in_range)[0]  # Get indices of neighbors
+            # Get actual agent IDs (assuming agent.id exists)
+            neighbor_ids = [self.agents[idx].id for idx in neighbor_indices]
+            # Convert to comma-separated string (e.g., "1,2,3,6")
+            neighbor_ids_str = ",".join(map(str, neighbor_ids))
+            sender.ids_of_neighbors.append(neighbor_ids_str)  # Store string of neighbor IDs
 
             if self.config["occlusion"]:
                 # Send broadcasts to visible agents within communication range
