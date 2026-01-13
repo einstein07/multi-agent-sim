@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 import os
@@ -998,10 +999,38 @@ class Simulation:
                 agent.agent_log_data(time_step)
                 
 
+def load_config(config_path):
+    """Load a simulation config file."""
+    abs_config_path = os.path.abspath(config_path)
+    if not os.path.isfile(abs_config_path):
+        raise FileNotFoundError(f"Config file not found: {abs_config_path}")
+    with open(abs_config_path) as f:
+        return json.load(f)
 
-if __name__ == "__main__":
-    with open("configs/config_2_targets_geometry.json") as f:
-        config = json.load(f)
 
+def main(config_path):
+    """Run the simulation for a single config file."""
+    config = load_config(config_path)
+    print(f"Running simulation with config: {os.path.abspath(config_path)}")
     simulation = Simulation(config)
     simulation.run_experiments()
+
+
+if __name__ == "__main__":
+    default_config = os.path.join(
+        os.path.dirname(__file__),
+        "configs",
+        "occlusion-case",
+        "occlusion.json",
+    )
+    parser = argparse.ArgumentParser(
+        description="Run the multi-agent simulation with a given JSON config file."
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=default_config,
+        help=f"Path to the simulation config file (default: {default_config})",
+    )
+    args = parser.parse_args()
+    main(args.config)
